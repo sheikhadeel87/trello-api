@@ -149,24 +149,29 @@ const connectDB = async () => {
   return cached.conn;
 };
 
-// Middleware to normalize paths (fix double /api/api issue)
+// Middleware to normalize paths (fix double /api/api issue from Vercel rewrites)
 app.use((req, res, next) => {
-  // Log incoming request for debugging
-  if (process.env.NODE_ENV === 'development' || req.path.includes('debug')) {
-    console.log('Incoming request:', {
-      method: req.method,
-      path: req.path,
-      url: req.url,
-      originalUrl: req.originalUrl
-    });
-  }
+  // Log incoming request for debugging (always log in production to debug routing)
+  console.log('Incoming request:', {
+    method: req.method,
+    path: req.path,
+    url: req.url,
+    originalUrl: req.originalUrl,
+    baseUrl: req.baseUrl
+  });
   
-  // Fix double /api/api prefix that can occur with Vercel routing
-  if (req.url.startsWith('/api/api/') || req.originalUrl.startsWith('/api/api/')) {
-    req.url = req.url.replace(/^\/api\/api/, '/api');
-    req.originalUrl = req.originalUrl.replace(/^\/api\/api/, '/api');
-    // Update path as well
-    req.path = req.path.replace(/^\/api\/api/, '/api');
+  // Fix double /api/api prefix that occurs when Vercel rewrites /api/* to /api
+  // When request is /api/auth/login, Vercel rewrites to /api, but Express receives /api/api/auth/login
+  const originalUrl = req.originalUrl || req.url;
+  if (originalUrl.startsWith('/api/api/')) {
+    const fixedUrl = originalUrl.replace(/^\/api\/api/, '/api');
+    req.url = fixedUrl;
+    req.originalUrl = fixedUrl;
+    // Also update path
+    if (req.path.startsWith('/api/api/')) {
+      req.path = req.path.replace(/^\/api\/api/, '/api');
+    }
+    console.log('Fixed path from', originalUrl, 'to', fixedUrl);
   }
   next();
 });
