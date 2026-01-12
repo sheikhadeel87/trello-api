@@ -20,17 +20,25 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Middleware - CORS Configuration
-// Allow all origins (*) for now - can restrict later
+const allowedOrigins = [
+  'https://trello-client-six.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
 app.use(cors({
-  origin: true, // Allow all origins
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range'],
-  preflightContinue: false,
-  optionsSuccessStatus: 204,
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
