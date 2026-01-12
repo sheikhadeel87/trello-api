@@ -136,6 +136,16 @@ const connectDB = async () => {
   return cached.conn;
 };
 
+// Middleware to normalize paths (fix double /api/api issue)
+app.use((req, res, next) => {
+  // Fix double /api/api prefix that can occur with Vercel routing
+  if (req.path.startsWith('/api/api/')) {
+    req.url = req.url.replace('/api/api/', '/api/');
+    req.originalUrl = req.originalUrl.replace('/api/api/', '/api/');
+  }
+  next();
+});
+
 // Middleware to ensure DB connection before handling requests (serverless-safe)
 app.use(async (req, res, next) => {
   try {
